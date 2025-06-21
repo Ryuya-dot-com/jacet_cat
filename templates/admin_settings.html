@@ -1,0 +1,279 @@
+<!-- templates/admin_settings.html -->
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-12">
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <h1 class="h3 mb-0">システム設定</h1>
+                <a href="{{ url_for('admin_statistics') }}" class="btn btn-secondary">
+                    <i class="bi bi-arrow-left"></i> 統計画面に戻る
+                </a>
+            </div>
+        </div>
+    </div>
+
+    {% with messages = get_flashed_messages(with_categories=true) %}
+        {% if messages %}
+            {% for category, message in messages %}
+                <div class="alert alert-{{ 'danger' if category == 'error' else category }} alert-dismissible fade show" role="alert">
+                    {{ message }}
+                    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                </div>
+            {% endfor %}
+        {% endif %}
+    {% endwith %}
+
+    <div class="row">
+        <div class="col-md-8">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="card-title mb-0">
+                        <i class="bi bi-gear"></i> CAT設定
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <form method="POST">
+                        <div class="row">
+                            {% for setting_key, setting_value, description in settings %}
+                                {% if setting_key != 'system_version' %}
+                                <div class="col-md-6 mb-3">
+                                    <label for="{{ setting_key }}" class="form-label">
+                                        <strong>{{ setting_key|replace('_', ' ')|title }}</strong>
+                                    </label>
+                                    <small class="text-muted d-block mb-2">{{ description }}</small>
+                                    
+                                    {% if setting_key == 'admin_password' %}
+                                        <input type="password" 
+                                               class="form-control" 
+                                               id="{{ setting_key }}" 
+                                               name="{{ setting_key }}" 
+                                               value="{{ setting_value }}"
+                                               required>
+                                        <div class="form-text">
+                                            <i class="bi bi-exclamation-triangle text-warning"></i>
+                                            セキュリティのため定期的に変更してください
+                                        </div>
+                                    {% elif setting_key in ['se_threshold', 'max_items', 'min_items', 'time_limit_per_item'] %}
+                                        <input type="number" 
+                                               class="form-control" 
+                                               id="{{ setting_key }}" 
+                                               name="{{ setting_key }}" 
+                                               value="{{ setting_value }}"
+                                               step="{% if 'threshold' in setting_key %}0.1{% else %}1{% endif %}"
+                                               min="{% if 'threshold' in setting_key %}0.1{% else %}1{% endif %}"
+                                               required>
+                                    {% elif setting_key == 'exposure_control' %}
+                                        <select class="form-select" id="{{ setting_key }}" name="{{ setting_key }}">
+                                            <option value="1" {% if setting_value == '1' %}selected{% endif %}>有効</option>
+                                            <option value="0" {% if setting_value == '0' %}selected{% endif %}>無効</option>
+                                        </select>
+                                    {% else %}
+                                        <input type="text" 
+                                               class="form-control" 
+                                               id="{{ setting_key }}" 
+                                               name="{{ setting_key }}" 
+                                               value="{{ setting_value }}"
+                                               required>
+                                    {% endif %}
+                                </div>
+                                {% endif %}
+                            {% endfor %}
+                        </div>
+                        
+                        <div class="mt-4">
+                            <button type="submit" class="btn btn-primary">
+                                <i class="bi bi-check-circle"></i> 設定を保存
+                            </button>
+                            <button type="reset" class="btn btn-outline-secondary ms-2">
+                                <i class="bi bi-arrow-clockwise"></i> リセット
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-4">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="card-title mb-0">
+                        <i class="bi bi-info-circle"></i> 設定ガイド
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div class="accordion" id="settingsGuide">
+                        <div class="accordion-item">
+                            <h2 class="accordion-header">
+                                <button class="accordion-button" type="button" data-bs-toggle="collapse" data-bs-target="#catSettings">
+                                    CAT パラメータ
+                                </button>
+                            </h2>
+                            <div id="catSettings" class="accordion-collapse collapse show" data-bs-parent="#settingsGuide">
+                                <div class="accordion-body">
+                                    <ul class="list-unstyled">
+                                        <li><strong>SE Threshold:</strong> 測定精度の閾値（推奨: 0.3-0.5）</li>
+                                        <li><strong>Max Items:</strong> 最大出題数（推奨: 20-40）</li>
+                                        <li><strong>Min Items:</strong> 最小出題数（推奨: 5-10）</li>
+                                        <li><strong>Time Limit:</strong> 項目あたりの制限時間（秒）</li>
+                                    </ul>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="accordion-item">
+                            <h2 class="accordion-header">
+                                <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#securitySettings">
+                                    セキュリティ
+                                </button>
+                            </h2>
+                            <div id="securitySettings" class="accordion-collapse collapse" data-bs-parent="#settingsGuide">
+                                <div class="accordion-body">
+                                    <ul class="list-unstyled">
+                                        <li><strong>Admin Password:</strong> 管理者認証用パスワード</li>
+                                        <li><strong>推奨:</strong> 8文字以上、英数字記号混在</li>
+                                        <li><strong>注意:</strong> 定期的な変更を推奨</li>
+                                    </ul>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="accordion-item">
+                            <h2 class="accordion-header">
+                                <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#exposureSettings">
+                                    項目露出制御
+                                </button>
+                            </h2>
+                            <div id="exposureSettings" class="accordion-collapse collapse" data-bs-parent="#settingsGuide">
+                                <div class="accordion-body">
+                                    <ul class="list-unstyled">
+                                        <li><strong>有効:</strong> 特定項目の過度な使用を防ぐ</li>
+                                        <li><strong>無効:</strong> 純粋に最大情報量基準で選択</li>
+                                        <li><strong>推奨:</strong> 運用環境では有効</li>
+                                    </ul>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="card mt-3">
+                <div class="card-header">
+                    <h5 class="card-title mb-0">
+                        <i class="bi bi-clipboard-data"></i> システム情報
+                    </h5>
+                </div>
+                <div class="card-body">
+                    {% for setting_key, setting_value, description in settings %}
+                        {% if setting_key == 'system_version' %}
+                        <p><strong>バージョン:</strong> {{ setting_value }}</p>
+                        {% endif %}
+                    {% endfor %}
+                    <p><strong>データベース:</strong> SQLite</p>
+                    <p><strong>統計エンジン:</strong> R + Python</p>
+                    <p><strong>最終更新:</strong> {{ moment().format('YYYY-MM-DD HH:mm') }}</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 危険な操作セクション -->
+    <div class="row mt-4">
+        <div class="col-12">
+            <div class="card border-danger">
+                <div class="card-header bg-danger text-white">
+                    <h5 class="card-title mb-0">
+                        <i class="bi bi-exclamation-triangle"></i> 危険な操作
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-4">
+                            <button class="btn btn-outline-warning w-100" onclick="resetStatistics()">
+                                <i class="bi bi-arrow-counterclockwise"></i> 統計リセット
+                            </button>
+                            <small class="text-muted">項目統計を初期化します</small>
+                        </div>
+                        <div class="col-md-4">
+                            <button class="btn btn-outline-danger w-100" onclick="clearSessions()">
+                                <i class="bi bi-trash"></i> セッション削除
+                            </button>
+                            <small class="text-muted">古いセッションデータを削除します</small>
+                        </div>
+                        <div class="col-md-4">
+                            <button class="btn btn-outline-dark w-100" onclick="factoryReset()">
+                                <i class="bi bi-bootstrap-reboot"></i> 工場出荷時設定
+                            </button>
+                            <small class="text-muted">すべての設定を初期値に戻します</small>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+function resetStatistics() {
+    if (confirm('項目統計をリセットしますか？この操作は取り消せません。')) {
+        fetch('/admin/reset_statistics', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'}
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                alert('統計をリセットしました');
+                location.reload();
+            } else {
+                alert('エラー: ' + data.error);
+            }
+        });
+    }
+}
+
+function clearSessions() {
+    const days = prompt('何日前より古いセッションを削除しますか？', '30');
+    if (days && confirm(`${days}日前より古いセッションデータを削除します。よろしいですか？`)) {
+        fetch('/admin/clear_sessions', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({days: parseInt(days)})
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                alert(`${data.deleted} 件のセッションを削除しました`);
+                location.reload();
+            } else {
+                alert('エラー: ' + data.error);
+            }
+        });
+    }
+}
+
+function factoryReset() {
+    if (confirm('すべての設定を工場出荷時の状態に戻しますか？この操作は取り消せません。')) {
+        if (confirm('本当に実行しますか？すべてのカスタム設定が失われます。')) {
+            fetch('/admin/factory_reset', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'}
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    alert('工場出荷時設定に戻しました。再ログインが必要です。');
+                    window.location.href = '/admin/logout';
+                } else {
+                    alert('エラー: ' + data.error);
+                }
+            });
+        }
+    }
+}
+</script>
+{% endblock %>

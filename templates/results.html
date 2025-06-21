@@ -1,0 +1,81 @@
+<!-- templates/results.html -->
+{% extends "base.html" %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-md-10">
+        <div class="card">
+            <div class="card-body text-center p-5">
+                <h1 class="card-title text-success mb-4">
+                    <i class="bi bi-check-circle"></i> テスト完了！
+                </h1>
+                
+                <div class="row mb-4">
+                    <div class="col-md-4">
+                        <div class="card bg-primary text-white">
+                            <div class="card-body">
+                                <h2 class="display-4">{{ result.vocabulary_size }}</h2>
+                                <p class="mb-0">語</p>
+                                <small>推定語彙サイズ</small>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="card bg-info text-white">
+                            <div class="card-body">
+                                <h2 class="display-4">{{ result.items_administered }}</h2>
+                                <p class="mb-0">問</p>
+                                <small>出題数</small>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="card bg-success text-white">
+                            <div class="card-body">
+                                <h2 class="display-4">{{ "%.1f"|format(result.final_se * 100) }}%</h2>
+                                <p class="mb-0">精度</p>
+                                <small>測定誤差</small>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="alert alert-info">
+                    <h5>結果の解釈</h5>
+                    <p>
+                        あなたの推定語彙サイズは <strong>{{ result.vocabulary_size }}語</strong> です。
+                        これは、JACET基本語彙リスト8000語の中で、あなたが知っている可能性が高い単語数を表しています。
+                    </p>
+                </div>
+
+                <div class="text-start mb-4">
+                    <h5>語彙レベル別習得状況</h5>
+                    <div class="progress-bars">
+                        {% for level in range(1, 9) %}
+                        <div class="mb-2">
+                            <label>Level {{ level }} ({{ (level-1)*1000 + 1 }}-{{ level*1000 }}語)</label>
+                            <div class="progress">
+                                <div class="progress-bar" style="width: {{ (8 - level + result.final_theta + 3) * 12.5 }}%"></div>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                </div>
+
+                <div class="row">
+                    <div class="col-md-6">
+                        <a href="/" class="btn btn-primary btn-lg w-100">
+                            新しいテストを開始
+                        </a>
+                    </div>
+                    <div class="col-md-6">
+                        <button class="btn btn-outline-secondary btn-lg w-100" onclick="window.print()">
+                            結果を印刷
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

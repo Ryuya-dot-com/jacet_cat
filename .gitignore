@@ -1,0 +1,25 @@
+cat <<'EOF' > .gitignore
+# Python / Flask
+__pycache__/
+*.py[cod]
+*.log
+*.sqlite
+instance/
+*.db
+
+# Virtualenv
+jacet_env/
+
+# R
+.Rhistory
+.RData
+
+# Backups & temp
+backups/
+temp/
+
+# OS / IDE
+.DS_Store
+.idea/
+.vscode/
+EOF

@@ -1,0 +1,156 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>JACET語彙サイズテスト - CAT版</title>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.0/css/bootstrap.min.css" rel="stylesheet">
+    <link href="{{ url_for('static', filename='css/style.css') }}" rel="stylesheet">
+    <style>
+        .debug-info {
+            background-color: #f8f9fa;
+            border: 1px solid #dee2e6;
+            padding: 10px;
+            margin: 10px 0;
+            border-radius: 5px;
+            font-family: monospace;
+        }
+    </style>
+</head>
+<body>
+    <div class="container mt-5">
+        <h1 class="text-center mb-4">JACET語彙サイズテスト</h1>
+        <p class="text-center text-muted">Computer Adaptive Testing版</p>
+        
+        <div class="row justify-content-center">
+            <div class="col-md-8">
+                <div class="card">
+                    <div class="card-header bg-info text-white">
+                        <h3>テストについて</h3>
+                    </div>
+                    <div class="card-body">
+                        <p>このテストは、あなたの英語語彙力を効率的に測定するコンピュータ適応型テストです。あなたの回答に基づいて、次に出題される問題の難易度が自動調整されます。</p>
+                        
+                        <div class="row">
+                            <div class="col-md-6">
+                                <h5>特徴</h5>
+                                <ul>
+                                    <li>✓ 個人に最適化された問題選択</li>
+                                    <li>✓ 効率的な測定（通常20-30問）</li>
+                                    <li>✓ 高精度な語彙サイズ推定</li>
+                                    <li>✓ リアルタイム能力値更新</li>
+                                </ul>
+                            </div>
+                            <div class="col-md-6">
+                                <h5>注意事項</h5>
+                                <ul>
+                                    <li>• 辞書の使用は禁止です</li>
+                                    <li>• 各問題に制限時間があります</li>
+                                    <li>• 途中での中断はできません</li>
+                                    <li>• 最後まで集中して取り組んでください</li>
+                                </ul>
+                            </div>
+                        </div>
+                        
+                        <!-- デバッグ情報 -->
+                        <div class="debug-info">
+                            <strong>デバッグ情報:</strong><br>
+                            現在のURL: <span id="current-url"></span><br>
+                            フォーム要素: <span id="form-status"></span><br>
+                            JavaScript: <span id="js-status">読み込み中...</span>
+                        </div>
+                        
+                        <form id="start-form" method="POST" action="/start_test" onsubmit="return debugSubmit(event)">
+                            <div class="mb-3">
+                                <label for="student_id" class="form-label">受験者ID（任意）</label>
+                                <input type="text" class="form-control" id="student_id" name="student_id" 
+                                       placeholder="例: student001" value="test">
+                            </div>
+                            
+                            <div class="text-center">
+                                <button type="submit" class="btn btn-primary btn-lg" id="start-button">
+                                    テスト開始
+                                </button>
+                            </div>
+                        </form>
+                        
+                        <!-- デバッグボタン -->
+                        <div class="text-center mt-3">
+                            <button class="btn btn-secondary btn-sm" onclick="testConnection()">
+                                接続テスト
+                            </button>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="text-center mt-3">
+                    <small class="text-muted">
+                        <a href="/admin/login">管理者ログイン</a> | 
+                        <a href="/api/system_status">システム状態</a>
+                    </small>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.0/js/bootstrap.bundle.min.js"></script>
+    
+    <script>
+        // デバッグ情報の表示
+        document.addEventListener('DOMContentLoaded', function() {
+            document.getElementById('current-url').textContent = window.location.href;
+            document.getElementById('form-status').textContent = document.getElementById('start-form') ? '見つかりました' : '見つかりません';
+            document.getElementById('js-status').textContent = 'JavaScript動作中';
+            
+            console.log('ページが読み込まれました');
+            console.log('フォーム要素:', document.getElementById('start-form'));
+        });
+        
+        // フォーム送信のデバッグ
+        function debugSubmit(event) {
+            console.log('フォーム送信が開始されました');
+            console.log('Event:', event);
+            
+            const studentId = document.getElementById('student_id').value;
+            console.log('受験者ID:', studentId);
+            
+            if (!studentId.trim()) {
+                alert('受験者IDを入力してください');
+                return false;
+            }
+            
+            // 送信前にボタンを無効化
+            const button = document.getElementById('start-button');
+            button.disabled = true;
+            button.textContent = '送信中...';
+            
+            console.log('フォームを送信します');
+            return true;
+        }
+        
+        // 接続テスト
+        function testConnection() {
+            console.log('接続テストを開始');
+            fetch('/api/system_status')
+                .then(response => {
+                    console.log('レスポンス:', response);
+                    return response.json();
+                })
+                .then(data => {
+                    console.log('データ:', data);
+                    alert('接続OK: ' + JSON.stringify(data, null, 2));
+                })
+                .catch(error => {
+                    console.error('エラー:', error);
+                    alert('接続エラー: ' + error.message);
+                });
+        }
+        
+        // エラーハンドリング
+        window.addEventListener('error', function(event) {
+            console.error('JavaScript エラー:', event.error);
+            alert('JavaScript エラーが発生しました: ' + event.error.message);
+        });
+    </script>
+</body>
+</html>

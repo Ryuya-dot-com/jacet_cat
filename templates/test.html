@@ -1,0 +1,202 @@
+<!-- templates/test.html -->
+{% extends "base.html" %}
+
+{% block content %}
+<div class="row">
+    <div class="col-md-2">
+        <div class="card">
+            <div class="card-body text-center">
+                <h6>進捗</h6>
+                <div class="progress-ring">
+                    <svg width="80" height="80">
+                        <circle class="progress-ring-circle" 
+                                stroke="#e9ecef" stroke-width="4" 
+                                fill="transparent" r="36" cx="40" cy="40"/>
+                        <circle class="progress-ring-circle" 
+                                stroke="#0d6efd" stroke-width="4" 
+                                fill="transparent" r="36" cx="40" cy="40"
+                                stroke-dasharray="0 226"
+                                id="progress-circle"/>
+                    </svg>
+                </div>
+                <p class="mt-2 mb-0">
+                    <span id="current-item">{{ progress + 1 }}</span> 問目
+                </p>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-10">
+        <div class="card">
+            <div class="card-body">
+                <div class="d-flex justify-content-between align-items-center mb-4">
+                    <h5 class="card-title mb-0">
+                        問題 {{ progress + 1 }} 
+                        <span class="badge bg-secondary">Level {{ next_item.level }}</span>
+                    </h5>
+                    <div id="timer" class="badge bg-warning fs-6">3:00</div>
+                </div>
+
+                <div class="question-area mb-4">
+                    <h4 class="text-center mb-4 p-4 bg-light rounded">
+                        {{ next_item.word }}
+                    </h4>
+                    
+                    <p class="lead">この日本語と同じ意味を表す英単語を選んでください：</p>
+                    
+                    <div id="answer-options" class="d-grid gap-2">
+                        <button type="button" class="btn btn-answer" data-answer="{{ next_item.correct_answer }}">
+                            1. {{ next_item.correct_answer }}
+                        </button>
+                        {% for distractor in next_item.distractors %}
+                        <button type="button" class="btn btn-answer" data-answer="{{ distractor }}">
+                            {{ loop.index + 1 }}. {{ distractor }}
+                        </button>
+                        {% endfor %}
+                    </div>
+                </div>
+
+                <div class="d-flex justify-content-between">
+                    <button id="submit-btn" class="btn btn-primary btn-lg" disabled>
+                        回答を送信
+                    </button>
+                    <small class="text-muted align-self-end">
+                        推定語彙サイズ: <span id="vocab-estimate">計算中...</span>
+                    </small>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- 送信中モーダル -->
+<div class="modal fade" id="submitting-modal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-body text-center p-4">
+                <div class="spinner-border text-primary mb-3" role="status"></div>
+                <h5>回答を処理中...</h5>
+                <p class="text-muted">次の問題を準備しています</p>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+let selectedAnswer = null;
+let timeLeft = 180; // 3分
+let timer;
+let isSubmitting = false;
+
+// 選択肢のランダム化
+document.addEventListener('DOMContentLoaded', function() {
+    const options = document.querySelectorAll('.btn-answer');
+    const container = document.getElementById('answer-options');
+    const shuffled = Array.from(options).sort(() => Math.random() - 0.5);
+    
+    container.innerHTML = '';
+    shuffled.forEach((option, index) => {
+        option.innerHTML = `${index + 1}. ${option.dataset.answer}`;
+        container.appendChild(option);
+    });
+    
+    startTimer();
+});
+
+// 選択肢クリック処理
+document.addEventListener('click', function(e) {
+    if (e.target.classList.contains('btn-answer') && !isSubmitting) {
+        document.querySelectorAll('.btn-answer').forEach(btn => {
+            btn.classList.remove('selected');
+        });
+        
+        e.target.classList.add('selected');
+        selectedAnswer = e.target.dataset.answer;
+        document.getElementById('submit-btn').disabled = false;
+    }
+});
+
+// 回答送信
+document.getElementById('submit-btn').addEventListener('click', function() {
+    if (!selectedAnswer || isSubmitting) return;
+    
+    isSubmitting = true;
+    clearInterval(timer);
+    
+    // モーダル表示
+    const modal = new bootstrap.Modal(document.getElementById('submitting-modal'));
+    modal.show();
+    
+    // 回答送信
+    fetch('/submit_answer', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+            item_id: {{ next_item.id }},
+            answer: selectedAnswer
+        })
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.error) {
+            alert('エラー: ' + data.error);
+            modal.hide();
+            isSubmitting = false;
+            return;
+        }
+        
+        if (data.should_continue && data.next_item) {
+            // 次の問題へ
+            setTimeout(() => {
+                window.location.reload();
+            }, 1000);
+        } else {
+            // テスト終了
+            setTimeout(() => {
+                window.location.href = '/results';
+            }, 1000);
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        alert('通信エラーが発生しました');
+        modal.hide();
+        isSubmitting = false;
+    });
+});
+
+// タイマー
+function startTimer() {
+    timer = setInterval(() => {
+        timeLeft--;
+        const minutes = Math.floor(timeLeft / 60);
+        const seconds = timeLeft % 60;
+        document.getElementById('timer').textContent = 
+            `${minutes}:${seconds.toString().padStart(2, '0')}`;
+        
+        if (timeLeft <= 0) {
+            clearInterval(timer);
+            // 時間切れ処理
+            if (!isSubmitting) {
+                alert('時間切れです。回答を送信します。');
+                if (selectedAnswer) {
+                    document.getElementById('submit-btn').click();
+                } else {
+                    // ランダム選択
+                    const options = document.querySelectorAll('.btn-answer');
+                    const randomOption = options[Math.floor(Math.random() * options.length)];
+                    randomOption.click();
+                    setTimeout(() => {
+                        document.getElementById('submit-btn').click();
+                    }, 500);
+                }
+            }
+        }
+    }, 1000);
+}
+</script>
+{% endblock %}

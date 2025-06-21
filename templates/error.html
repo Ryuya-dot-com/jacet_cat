@@ -1,0 +1,136 @@
+<!-- templates/error.html -->
+{% extends "base.html" %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-md-8 col-lg-6">
+        <div class="card border-0 shadow">
+            <div class="card-body text-center p-5">
+                {% if error_code == 404 %}
+                    <div class="error-icon mb-4">
+                        <i class="bi bi-compass text-warning" style="font-size: 4rem;"></i>
+                    </div>
+                    <h1 class="display-4 text-muted">404</h1>
+                    <h3 class="card-title mb-3">ページが見つかりません</h3>
+                    <p class="text-muted mb-4">
+                        お探しのページは存在しないか、移動または削除された可能性があります。
+                    </p>
+                {% elif error_code == 500 %}
+                    <div class="error-icon mb-4">
+                        <i class="bi bi-exclamation-triangle text-danger" style="font-size: 4rem;"></i>
+                    </div>
+                    <h1 class="display-4 text-muted">500</h1>
+                    <h3 class="card-title mb-3">内部サーバーエラー</h3>
+                    <p class="text-muted mb-4">
+                        サーバー側で問題が発生しました。しばらく待ってから再試行してください。
+                    </p>
+                {% else %}
+                    <div class="error-icon mb-4">
+                        <i class="bi bi-bug text-danger" style="font-size: 4rem;"></i>
+                    </div>
+                    <h1 class="display-4 text-muted">{{ error_code }}</h1>
+                    <h3 class="card-title mb-3">エラーが発生しました</h3>
+                    <p class="text-muted mb-4">
+                        {% if error_message %}
+                            {{ error_message }}
+                        {% else %}
+                            予期しないエラーが発生しました。
+                        {% endif %}
+                    </p>
+                {% endif %}
+
+                <div class="alert alert-light border" role="alert">
+                    <h6 class="alert-heading">
+                        <i class="bi bi-lightbulb"></i> 解決方法
+                    </h6>
+                    <ul class="list-unstyled mb-0 text-start">
+                        {% if error_code == 404 %}
+                            <li>• URLを確認してください</li>
+                            <li>• ブックマークが古い可能性があります</li>
+                            <li>• トップページから目的のページを探してください</li>
+                        {% elif error_code == 500 %}
+                            <li>• ページを更新してください</li>
+                            <li>• しばらく時間をおいて再試行してください</li>
+                            <li>• 問題が続く場合は管理者にお問い合わせください</li>
+                        {% else %}
+                            <li>• ページを更新してください</li>
+                            <li>• ブラウザのキャッシュをクリアしてください</li>
+                            <li>• 問題が続く場合は管理者にお問い合わせください</li>
+                        {% endif %}
+                    </ul>
+                </div>
+
+                <div class="d-grid gap-2 d-md-flex justify-content-md-center mt-4">
+                    <a href="/" class="btn btn-primary">
+                        <i class="bi bi-house"></i> トップページ
+                    </a>
+                    <button class="btn btn-outline-secondary" onclick="history.back()">
+                        <i class="bi bi-arrow-left"></i> 前のページに戻る
+                    </button>
+                    <button class="btn btn-outline-info" onclick="location.reload()">
+                        <i class="bi bi-arrow-clockwise"></i> ページを更新
+                    </button>
+                </div>
+
+                {% if error_code == 500 %}
+                <div class="mt-4">
+                    <small class="text-muted">
+                        <i class="bi bi-shield-check"></i>
+                        セッションデータは安全に保護されています
+                    </small>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+
+        <!-- 追加ヘルプ -->
+        <div class="card mt-4">
+            <div class="card-body">
+                <h6 class="card-title">
+                    <i class="bi bi-question-circle"></i> お困りですか？
+                </h6>
+                <div class="row text-center">
+                    <div class="col-md-4">
+                        <a href="/" class="text-decoration-none">
+                            <i class="bi bi-play-circle fs-2 text-primary d-block"></i>
+                            <small>新しいテストを<br>開始する</small>
+                        </a>
+                    </div>
+                    <div class="col-md-4">
+                        <a href="/admin/login" class="text-decoration-none">
+                            <i class="bi bi-gear fs-2 text-secondary d-block"></i>
+                            <small>管理者画面に<br>アクセスする</small>
+                        </a>
+                    </div>
+                    <div class="col-md-4">
+                        <a href="/api/system_status" class="text-decoration-none">
+                            <i class="bi bi-activity fs-2 text-success d-block"></i>
+                            <small>システム状態を<br>確認する</small>
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+// エラー情報を開発者ツールに出力（デバッグ用）
+console.group('🔍 Error Information');
+console.log('Error Code:', {{ error_code }});
+console.log('Error Message:', '{{ error_message|safe }}');
+console.log('URL:', window.location.href);
+console.log('User Agent:', navigator.userAgent);
+console.log('Timestamp:', new Date().toISOString());
+console.groupEnd();
+
+// 自動的に前のページに戻る機能（開発環境用）
+if (window.location.hostname === 'localhost' && {{ error_code }} === 404) {
+    setTimeout(() => {
+        if (confirm('404エラーです。前のページに戻りますか？')) {
+            history.back();
+        }
+    }, 3000);
+}
+</script>
+{% endblock %}
