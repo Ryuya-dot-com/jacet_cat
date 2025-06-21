@@ -21,17 +21,19 @@ import sqlite3
 import shutil
 import pandas as pd
 from datetime import datetime
-import logging
+import logging, sys
 from functools import wraps
 import random
 
 # ロギング設定
+LOG_DIR = os.path.join(os.path.dirname(__file__), 'logs')
+os.makedirs(LOG_DIR, exist_ok=True)
 logging.basicConfig(
     level=logging.INFO,
     format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
     handlers=[
-        logging.FileHandler('logs/jacet_cat.log'),
-        logging.StreamHandler()
+        logging.FileHandler(os.path.join(LOG_DIR, 'jacet_cat.log')),
+        logging.StreamHandler(sys.stdout)
     ]
 )
 logger = logging.getLogger(__name__)
